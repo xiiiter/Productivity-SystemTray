@@ -966,7 +966,7 @@ function UpdateCheckContent() {
       const response = await fetch("https://api.github.com/repos/xiiiter/Productivity-SystemTray/releases/latest");
       const data = await response.json();
       
-      const currentVersion = "0.2.0";
+      const currentVersion = "0.1.0";
       const latestVersion = data.tag_name?.replace("v", "") || "0.1.0";
       
       if (latestVersion > currentVersion) {

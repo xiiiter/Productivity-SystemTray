@@ -1,10 +1,132 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 type View = "menu" | "select-branch" | "metrics" | "productivity" | "workload";
 type Modal = null | "settings" | "about";
 
+interface Theme {
+  name: string;
+  displayName: string;
+  background: {
+    primary: string;
+    secondary: string;
+    hover: string;
+    active: string;
+    modal: string;
+    modalOverlay: string;
+  };
+  text: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+  };
+  accent: {
+    primary: string;
+    hover: string;
+    glow: string;
+    glowStrong: string;
+  };
+  divider: string;
+  status: {
+    online: string;
+    onlineGlow: string;
+  };
+}
+
+const themes: Record<string, Theme> = {
+  darkBlue: {
+    name: "darkBlue",
+    displayName: "Dark Blue",
+    background: {
+      primary: "rgba(26, 31, 43, 0.85)",
+      secondary: "rgba(96, 165, 250, 0.08)",
+      hover: "rgba(96, 165, 250, 0.12)",
+      active: "rgba(96, 165, 250, 0.18)",
+      modal: "rgba(26, 31, 43, 0.95)",
+      modalOverlay: "rgba(0, 0, 0, 0.6)",
+    },
+    text: {
+      primary: "#e5e7eb",
+      secondary: "#9ca3af",
+      tertiary: "#6b7280",
+    },
+    accent: {
+      primary: "#60a5fa",
+      hover: "#93c5fd",
+      glow: "rgba(96, 165, 250, 0.3)",
+      glowStrong: "rgba(96, 165, 250, 0.6)",
+    },
+    divider: "#353534",
+    status: {
+      online: "#60a5fa",
+      onlineGlow: "rgba(96, 165, 250, 0.6)",
+    },
+  },
+  darkNeutral: {
+    name: "darkNeutral",
+    displayName: "Dark Neutral",
+    background: {
+      primary: "rgba(28, 28, 30, 0.85)",
+      secondary: "rgba(255, 255, 255, 0.06)",
+      hover: "rgba(255, 255, 255, 0.08)",
+      active: "rgba(255, 255, 255, 0.12)",
+      modal: "rgba(28, 28, 30, 0.95)",
+      modalOverlay: "rgba(0, 0, 0, 0.6)",
+    },
+    text: {
+      primary: "#f5f5f7",
+      secondary: "#98989d",
+      tertiary: "#636366",
+    },
+    accent: {
+      primary: "#f5f5f7",
+      hover: "#ffffff",
+      glow: "rgba(255, 255, 255, 0.2)",
+      glowStrong: "rgba(255, 255, 255, 0.4)",
+    },
+    divider: "#38383a",
+    status: {
+      online: "#30d158",
+      onlineGlow: "rgba(48, 209, 88, 0.6)",
+    },
+  },
+};
+
+interface ThemeContextType {
+  theme: Theme;
+  themeName: string;
+  setThemeName: (name: string) => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+function ThemeProvider({ children }: { children: ReactNode }) {
+  const [themeName, setThemeName] = useState<string>("darkBlue");
+  const theme = themes[themeName];
+
+  return (
+    <ThemeContext.Provider value={{ theme, themeName, setThemeName }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error("useTheme must be used within ThemeProvider");
+  return context;
+}
+
 function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
+  const { theme } = useTheme();
   const [currentView, setCurrentView] = useState<View>("menu");
   const [activeModal, setActiveModal] = useState<Modal>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -49,31 +171,65 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <div className="header">
+    <div className="app-container" style={{ backgroundColor: theme.background.primary }}>
+      <div className="header" style={{ borderBottomColor: theme.divider }}>
         <div className="header-left">
           <div className="logo">
-            <img src="/logo.png" alt="Logo" />
+            <img src="../assets/logo.png" alt="Logo" />
           </div>
-          <span className="header-title">Productivity</span>
+          <span className="header-title" style={{ color: theme.text.primary }}>
+            Productivity
+          </span>
         </div>
         <div className="header-right">
-          <svg className="header-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            className="header-icon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.accent.primary}
+            strokeWidth="2"
+          >
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
-          <svg className="header-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            className="header-icon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.accent.primary}
+            strokeWidth="2"
+          >
             <rect x="3" y="4" width="18" height="16" rx="2"></rect>
             <polyline points="3,8 12,13 21,8"></polyline>
           </svg>
           <div className="account-info">
             <div className="account-row">
-              <div className="account-name">account.name</div>
-              <div className="status-dot"></div>
+              <div className="account-name" style={{ color: theme.text.primary }}>
+                account.name
+              </div>
+              <div
+                className="status-dot"
+                style={{
+                  background: theme.status.online,
+                  boxShadow: `0 0 6px ${theme.status.onlineGlow}`,
+                }}
+              ></div>
             </div>
             <div className="account-row">
-              <div className="account-role">account.role</div>
-              <div className="status-dot"></div>
+              <div className="account-role" style={{ color: theme.text.secondary }}>
+                account.role
+              </div>
+              <div
+                className="status-dot"
+                style={{
+                  background: theme.status.online,
+                  boxShadow: `0 0 6px ${theme.status.onlineGlow}`,
+                }}
+              ></div>
             </div>
           </div>
         </div>
@@ -83,52 +239,45 @@ function App() {
         {currentView === "menu" ? (
           <div className="menu-content">
             <div className="menu-section">
-              <div className="menu-item" onClick={() => navigateToView("select-branch")}>
-                <span className="menu-label">Select Branch</span>
-                <span className="menu-shortcut">⌘ O</span>
-              </div>
-              <div className="menu-item" onClick={() => navigateToView("metrics")}>
-                <span className="menu-label">View metrics</span>
-                <span className="menu-shortcut">⌘ M</span>
-              </div>
-              <div className="menu-item" onClick={() => navigateToView("productivity")}>
-                <span className="menu-label">Your productivity</span>
-                <span className="menu-shortcut">⌘ P</span>
-              </div>
-              <div className="menu-item" onClick={() => navigateToView("workload")}>
-                <span className="menu-label">View WorkLoad</span>
-                <span className="menu-shortcut">⌘ H</span>
-              </div>
+              <MenuItem
+                label="Select Branch"
+                shortcut="⌘ O"
+                onClick={() => navigateToView("select-branch")}
+              />
+              <MenuItem label="View metrics" shortcut="⌘ M" onClick={() => navigateToView("metrics")} />
+              <MenuItem
+                label="Your productivity"
+                shortcut="⌘ P"
+                onClick={() => navigateToView("productivity")}
+              />
+              <MenuItem label="View WorkLoad" shortcut="⌘ H" onClick={() => navigateToView("workload")} />
             </div>
 
-            <div className="separator"></div>
+            <div className="separator" style={{ background: theme.divider }}></div>
 
             <div className="menu-section">
-              <div className="menu-item" onClick={handleCheckUpdates}>
-                <span className="menu-label">Check for updates</span>
-              </div>
-              <div className="menu-item" onClick={() => setActiveModal("about")}>
-                <span className="menu-label">About Evolux</span>
-              </div>
+              <MenuItem label="Check for updates" onClick={handleCheckUpdates} />
+              <MenuItem label="About Evolux" onClick={() => setActiveModal("about")} />
             </div>
 
-            <div className="separator"></div>
+            <div className="separator" style={{ background: theme.divider }}></div>
 
             <div className="menu-section">
-              <div className="menu-item" onClick={() => setActiveModal("settings")}>
-                <span className="menu-label">Settings</span>
-                <span className="menu-shortcut">⌘ /</span>
-              </div>
-              <div className="menu-item" onClick={handleClose}>
-                <span className="menu-label">Quit</span>
-                <span className="menu-shortcut">⌘ Q</span>
-              </div>
+              <MenuItem label="Settings" shortcut="⌘ /" onClick={() => setActiveModal("settings")} />
+              <MenuItem label="Quit" shortcut="⌘ Q" onClick={handleClose} />
             </div>
           </div>
         ) : (
           <div className="view-content">
-            <div className="view-header">
-              <button className="back-button" onClick={() => navigateToView("menu")}>
+            <div className="view-header" style={{ borderBottomColor: theme.divider }}>
+              <button
+                className="back-button"
+                onClick={() => navigateToView("menu")}
+                style={{
+                  background: theme.background.secondary,
+                  color: theme.accent.primary,
+                }}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
@@ -146,17 +295,34 @@ function App() {
       </div>
 
       {activeModal && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{activeModal === "settings" ? "Settings" : "About Evolux"}</h3>
-              <button className="modal-close" onClick={() => setActiveModal(null)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setActiveModal(null)}
+          style={{ background: theme.background.modalOverlay }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: theme.background.modal,
+              borderColor: `${theme.accent.primary}1a`,
+            }}
+          >
+            <div className="modal-header" style={{ borderBottomColor: theme.divider }}>
+              <h3 style={{ color: theme.text.primary }}>
+                {activeModal === "settings" ? "Settings" : "About Evolux"}
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setActiveModal(null)}
+                style={{ color: theme.text.secondary }}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ color: theme.text.primary }}>
               {activeModal === "settings" ? <SettingsContent /> : <AboutContent />}
             </div>
           </div>
@@ -176,9 +342,9 @@ function App() {
         .app-container {
           width: 100%;
           min-height: 100vh;
-          background-color: rgba(35, 35, 35, 0.85);
           backdrop-filter: blur(20px);
-          animation: slideDown 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: slideDown 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+          transition: background-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         @keyframes slideDown {
@@ -197,7 +363,8 @@ function App() {
           align-items: center;
           justify-content: space-between;
           padding: 12px 16px;
-          border-bottom: 1px solid #353534;
+          border-bottom: 1px solid;
+          transition: border-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .header-left {
@@ -209,19 +376,23 @@ function App() {
         .logo {
           width: 24px;
           height: 24px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
         }
 
         .logo img {
           width: 100%;
           height: 100%;
           object-fit: contain;
-          display: block;
         }
 
         .header-title {
           font-size: 14px;
           font-weight: 300;
-          color: #e5e7eb;
+          transition: color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .header-right {
@@ -231,13 +402,12 @@ function App() {
         }
 
         .header-icon {
-          color: #9ca3af;
           cursor: pointer;
-          transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .header-icon:hover {
-          color: #e5e7eb;
+          filter: brightness(1.2) drop-shadow(0 0 6px currentColor);
         }
 
         .account-info {
@@ -255,25 +425,24 @@ function App() {
         .account-name {
           font-size: 12px;
           font-weight: 300;
-          color: #e5e7eb;
+          transition: color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .account-role {
           font-size: 10px;
           font-weight: 300;
-          color: #9ca3af;
+          transition: color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .status-dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #10b981;
-          box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
+          transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .content-wrapper {
-          transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: opacity 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .content-wrapper.transitioning {
@@ -281,7 +450,7 @@ function App() {
         }
 
         .menu-content {
-          animation: fadeIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: fadeIn 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         @keyframes fadeIn {
@@ -299,69 +468,14 @@ function App() {
           padding: 2px 0;
         }
 
-        .menu-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 4px 16px;
-          cursor: pointer;
-          transition: background 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-          user-select: none;
-          position: relative;
-        }
-
-        .menu-item:hover {
-          background: rgba(255, 255, 255, 0.06);
-        }
-
-        .menu-item:hover .menu-label {
-          font-weight: 500;
-          color: transparent;
-          background: linear-gradient(90deg, #e5e7eb 0%, #ffffff 50%, #e5e7eb 100%);
-          background-size: 200% 100%;
-          background-clip: text;
-          -webkit-background-clip: text;
-          animation: shimmer 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-          text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
-          transform: translateX(2px);
-        }
-
-        @keyframes shimmer {
-          0% {
-            background-position: 100% 0;
-          }
-          100% {
-            background-position: -100% 0;
-          }
-        }
-
-        .menu-item:active {
-          transform: translateY(1px);
-        }
-
-        .menu-label {
-          font-size: 13px;
-          font-weight: 300;
-          color: #e5e7eb;
-          transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-          line-height: 1.4;
-        }
-
-        .menu-shortcut {
-          font-size: 12px;
-          font-weight: 300;
-          color: #6b7280;
-          opacity: 0.7;
-        }
-
         .separator {
           height: 1px;
-          background: #353534;
           margin: 7px 0;
+          transition: background 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .view-content {
-          animation: viewSlideIn 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: viewSlideIn 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         @keyframes viewSlideIn {
@@ -377,7 +491,8 @@ function App() {
 
         .view-header {
           padding: 12px 16px;
-          border-bottom: 1px solid #353534;
+          border-bottom: 1px solid;
+          transition: border-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .back-button {
@@ -385,24 +500,21 @@ function App() {
           align-items: center;
           gap: 6px;
           padding: 6px 12px;
-          background: rgba(255, 255, 255, 0.04);
           border: none;
           border-radius: 6px;
-          color: #e5e7eb;
           font-size: 13px;
           font-weight: 300;
           cursor: pointer;
-          transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .back-button:hover {
-          background: rgba(255, 255, 255, 0.08);
-          font-weight: 500;
+          opacity: 0.8;
           transform: translateX(-2px);
         }
 
         .back-button:active {
-          transform: translateX(-2px) translateY(1px);
+          transform: translateX(-2px) scale(0.98);
         }
 
         .view-body {
@@ -411,7 +523,6 @@ function App() {
         }
 
         .view-placeholder {
-          color: #9ca3af;
           font-size: 14px;
           font-weight: 300;
           text-align: center;
@@ -424,13 +535,13 @@ function App() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(8px);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
-          animation: fadeInOverlay 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: fadeInOverlay 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+          transition: background 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         @keyframes fadeInOverlay {
@@ -443,14 +554,15 @@ function App() {
         }
 
         .modal-content {
-          background: rgba(45, 45, 45, 0.95);
           backdrop-filter: blur(20px);
           border-radius: 12px;
-          width: 280px;
-          max-height: 400px;
+          border: 1px solid;
+          width: 320px;
+          max-height: 500px;
           overflow: hidden;
-          animation: modalSlideIn 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          animation: modalSlideIn 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+          transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         @keyframes modalSlideIn {
@@ -469,105 +581,330 @@ function App() {
           align-items: center;
           justify-content: space-between;
           padding: 16px;
-          border-bottom: 1px solid #353534;
+          border-bottom: 1px solid;
+          transition: border-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .modal-header h3 {
           font-size: 15px;
           font-weight: 500;
-          color: #e5e7eb;
+          transition: color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .modal-close {
           background: none;
           border: none;
-          color: #9ca3af;
           cursor: pointer;
           padding: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 4px;
-          transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         .modal-close:hover {
-          background: rgba(255, 255, 255, 0.06);
-          color: #e5e7eb;
+          opacity: 0.7;
         }
 
         .modal-body {
           padding: 16px;
-          color: #d1d5db;
           font-size: 13px;
           font-weight: 300;
           line-height: 1.6;
+          transition: color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
       `}</style>
     </div>
   );
 }
 
-function SelectBranchView() {
+function MenuItem({
+  label,
+  shortcut,
+  onClick,
+  active = false,
+}: {
+  label: string;
+  shortcut?: string;
+  onClick: () => void;
+  active?: boolean;
+}) {
+  const { theme } = useTheme();
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <div className="view-placeholder">
-      <h3 style={{ color: '#e5e7eb', marginBottom: '8px', fontSize: '15px', fontWeight: 600 }}>Select Branch</h3>
+    <div
+      className="menu-item"
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        background: active
+          ? theme.background.active
+          : isHovered
+          ? theme.background.hover
+          : "transparent",
+        padding: "4px 16px",
+        cursor: "pointer",
+        transition: "all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+        userSelect: "none",
+        position: "relative",
+        borderRadius: "6px",
+        margin: "0 8px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <span
+        style={{
+          fontSize: "13px",
+          fontWeight: active || isHovered ? 500 : 300,
+          color: active || isHovered ? theme.accent.primary : theme.text.primary,
+          textShadow: active || isHovered ? `0 0 8px ${theme.accent.glow}` : "none",
+          transition: "all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+          lineHeight: "1.4",
+        }}
+      >
+        {label}
+      </span>
+      {shortcut && (
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: 300,
+            color: isHovered ? theme.accent.primary : theme.text.tertiary,
+            opacity: isHovered ? 0.8 : 0.7,
+            transition: "all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+          }}
+        >
+          {shortcut}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SelectBranchView() {
+  const { theme } = useTheme();
+  return (
+    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
+      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>
+        Select Branch
+      </h3>
       <p>Branch selection interface</p>
     </div>
   );
 }
 
 function MetricsView() {
+  const { theme } = useTheme();
   return (
-    <div className="view-placeholder">
-      <h3 style={{ color: '#e5e7eb', marginBottom: '8px', fontSize: '15px', fontWeight: 600 }}>Metrics</h3>
+    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
+      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>Metrics</h3>
       <p>Analytics and metrics dashboard</p>
     </div>
   );
 }
 
 function ProductivityView() {
+  const { theme } = useTheme();
   return (
-    <div className="view-placeholder">
-      <h3 style={{ color: '#e5e7eb', marginBottom: '8px', fontSize: '15px', fontWeight: 600 }}>Your Productivity</h3>
+    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
+      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>
+        Your Productivity
+      </h3>
       <p>Personal productivity insights</p>
     </div>
   );
 }
 
 function WorkloadView() {
+  const { theme } = useTheme();
   return (
-    <div className="view-placeholder">
-      <h3 style={{ color: '#e5e7eb', marginBottom: '8px', fontSize: '15px', fontWeight: 600 }}>WorkLoad</h3>
+    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
+      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>
+        WorkLoad
+      </h3>
       <p>Current workload overview</p>
     </div>
   );
 }
 
 function SettingsContent() {
+  const { theme, themeName, setThemeName } = useTheme();
+
   return (
-    <div>
-      <h4 style={{ color: '#e5e7eb', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Preferences</h4>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-          <input type="checkbox" style={{ accentColor: '#667eea' }} />
-          Start at login
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-          <input type="checkbox" defaultChecked style={{ accentColor: '#667eea' }} />
-          Show notifications
-        </label>
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
+        <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "12px" }}>
+          Appearance
+        </h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {Object.values(themes).map((t) => (
+            <ThemeOption
+              key={t.name}
+              theme={t}
+              isSelected={themeName === t.name}
+              onSelect={() => setThemeName(t.name)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          height: "1px",
+          background: theme.divider,
+        }}
+      ></div>
+
+      <div>
+        <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "12px" }}>
+          Preferences
+        </h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "13px",
+              color: theme.text.primary,
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              style={{
+                accentColor: theme.accent.primary,
+                width: "16px",
+                height: "16px",
+                cursor: "pointer",
+              }}
+            />
+            Start at login
+          </label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "13px",
+              color: theme.text.primary,
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              defaultChecked
+              style={{
+                accentColor: theme.accent.primary,
+                width: "16px",
+                height: "16px",
+                cursor: "pointer",
+              }}
+            />
+            Show notifications
+          </label>
+        </div>
       </div>
     </div>
   );
 }
 
+function ThemeOption({
+  theme: t,
+  isSelected,
+  onSelect,
+}: {
+  theme: Theme;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const { theme } = useTheme();
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "10px 12px",
+        background: isSelected ? theme.background.active : isHovered ? theme.background.hover : "transparent",
+        borderRadius: "8px",
+        cursor: "pointer",
+        transition: "all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+        border: isSelected ? `1px solid ${theme.accent.primary}33` : "1px solid transparent",
+      }}
+    >
+      <div
+        style={{
+          width: "40px",
+          height: "32px",
+          borderRadius: "6px",
+          background: t.background.primary,
+          backdropFilter: "blur(20px)",
+          border: `1px solid ${t.divider}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "10px",
+          color: t.accent.primary,
+          fontWeight: 500,
+          flexShrink: 0,
+        }}
+      >
+        Aa
+      </div>
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            fontSize: "13px",
+            fontWeight: isSelected ? 500 : 300,
+            color: isSelected ? theme.accent.primary : theme.text.primary,
+            marginBottom: "2px",
+            transition: "all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+          }}
+        >
+          {t.displayName}
+        </div>
+        <div style={{ fontSize: "11px", color: theme.text.secondary }}>
+          {t.name === "darkBlue" ? "Blue accent with dark background" : "Neutral gray with subtle accents"}
+        </div>
+      </div>
+      {isSelected && (
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={theme.accent.primary}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      )}
+    </div>
+  );
+}
+
 function AboutContent() {
+  const { theme } = useTheme();
   return (
     <div>
-      <h4 style={{ color: '#e5e7eb', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Evolux Productivity</h4>
-      <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>Version 0.1.0</p>
-      <p style={{ fontSize: '13px', lineHeight: '1.6' }}>
+      <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "8px" }}>
+        Evolux Productivity
+      </h4>
+      <p style={{ fontSize: "12px", color: theme.text.secondary, marginBottom: "12px" }}>Version 0.1.0</p>
+      <p style={{ fontSize: "13px", lineHeight: "1.6", color: theme.text.primary }}>
         A modern productivity application built with Tauri and React.
       </p>
     </div>

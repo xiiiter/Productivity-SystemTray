@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { useState, useEffect } from "react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 function App() {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -24,38 +24,38 @@ function App() {
   };
 
   return (
-    <div 
-      className="w-full h-screen flex items-start justify-end p-2"
-      style={{
-        backgroundColor: '#232323',
-      }}
-    >
+    <div className="w-full h-screen flex items-start justify-end p-2">
       <div className="w-72 animate-slideDown">
         <div className="p-6 flex flex-col gap-1">
-          {/* Label 1: Select Branch */}
           <div
-            onClick={() => handleOptionClick('Select Branch')}
+            onClick={() => handleOptionClick("Select Branch")}
             className="animated-label"
           >
-            <span className="label-text">
-              Select Branch
-            </span>
-            <span className="label-shortcut">
-              ⌘O
-            </span>
+            <span className="label-text">Select Branch</span>
+            <span className="label-shortcut">⌘O</span>
           </div>
-
-          {/* Label 2: View Metrics */}
           <div
-            onClick={() => handleOptionClick('View Metrics')}
+            onClick={() => handleOptionClick("View Metrics")}
             className="animated-label"
           >
-            <span className="label-text">
-              View Metrics
-            </span>
-            <span className="label-shortcut">
-              ⌘M
-            </span>
+            <span className="label-text">View Metrics</span>
+            <span className="label-shortcut">⌘M</span>
+          </div>
+        </div>
+        <div className="p-6 flex flex-col gap-1">
+          <div
+            onClick={() => handleOptionClick("Select Branch")}
+            className="animated-label"
+          >
+            <span className="label-text">Your productivity</span>
+            <span className="label-shortcut">⌘P</span>
+          </div>
+          <div
+            onClick={() => handleOptionClick("View Metrics")}
+            className="animated-label"
+          >
+            <span className="label-text">View Workload</span>
+            <span className="label-shortcut">⌘H</span>
           </div>
         </div>
       </div>

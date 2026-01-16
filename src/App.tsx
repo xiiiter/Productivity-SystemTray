@@ -5,7 +5,6 @@ function App() {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    // Garantir que a janela não seja transparente
     const setup = async () => {
       const window = getCurrentWebviewWindow();
       await window.setDecorations(false);
@@ -25,41 +24,49 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen flex items-start justify-end p-2 bg-transparent">
-      <div className="bg-white rounded-2xl shadow-2xl w-72 overflow-hidden animate-slideDown border border-gray-200">
-        {/* Duas opções principais */}
-        <div className="p-2 space-y-1">
-          {/* Opção 1: Select Branch */}
-          <button
+    <div 
+      className="w-full h-screen flex items-start justify-end p-2"
+      style={{
+        backgroundColor: '#232323',
+      }}
+    >
+      <div className="w-72 animate-slideDown">
+        <div className="p-6 flex flex-col gap-1">
+          {/* Label 1: Select Branch */}
+          <div
             onClick={() => handleOptionClick('Select Branch')}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 transition-all duration-200 rounded-lg group"
-            disabled={isAnimating}
+            className="animated-label"
           >
-            <span className="text-gray-800 font-normal text-sm">
+            <span className="label-text">
               Select Branch
             </span>
-            <span className="text-gray-400 text-sm font-normal">
+            <span className="label-shortcut">
               ⌘O
             </span>
-          </button>
+          </div>
 
-          {/* Opção 2: View Metrics */}
-          <button
+          {/* Label 2: View Metrics */}
+          <div
             onClick={() => handleOptionClick('View Metrics')}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 transition-all duration-200 rounded-lg group"
-            disabled={isAnimating}
+            className="animated-label"
           >
-            <span className="text-gray-800 font-normal text-sm">
-              View metrics
+            <span className="label-text">
+              View Metrics
             </span>
-            <span className="text-gray-400 text-sm font-normal">
+            <span className="label-shortcut">
               ⌘M
             </span>
-          </button>
+          </div>
         </div>
       </div>
 
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        * {
+          font-family: 'Poppins', sans-serif;
+        }
+
         @keyframes slideDown {
           from {
             opacity: 0;
@@ -75,12 +82,54 @@ function App() {
           animation: slideDown 0.2s ease-out;
         }
 
-        button:active {
-          transform: scale(0.98);
+        .animated-label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 0;
+          cursor: pointer;
+          user-select: none;
+          position: relative;
         }
 
-        button:disabled {
-          pointer-events: none;
+        .label-text {
+          font-size: 14px;
+          font-weight: 400;
+          color: #d1d5db;
+          position: relative;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          background: linear-gradient(90deg, #5c5cff 0%, #5c5cff 100%);
+          background-clip: text;
+          -webkit-background-clip: text;
+          background-size: 0% 100%;
+          background-repeat: no-repeat;
+          background-position: left center;
+          filter: drop-shadow(0 0 0px transparent);
+        }
+
+        .animated-label:hover .label-text {
+          background-size: 100% 100%;
+          -webkit-text-fill-color: transparent;
+          transform: scale(1.05);
+          letter-spacing: 0.3px;
+          filter: drop-shadow(0 0 8px rgba(92, 92, 255, 0.6)) 
+                  drop-shadow(0 0 12px rgba(92, 92, 255, 0.4));
+        }
+
+        .animated-label:active .label-text {
+          transform: scale(1.02);
+        }
+
+        .label-shortcut {
+          font-size: 12px;
+          color: #6b7280;
+          transition: all 0.3s ease;
+          opacity: 0.6;
+        }
+
+        .animated-label:hover .label-shortcut {
+          opacity: 1;
+          color: #9ca3af;
         }
       `}</style>
     </div>

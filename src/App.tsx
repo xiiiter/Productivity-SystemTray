@@ -1,8 +1,9 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { invoke } from "@tauri-apps/api/core";
 
 type View = "menu" | "select-branch" | "metrics" | "productivity" | "workload";
-type Modal = null | "settings" | "about";
+type Modal = null | "settings" | "about" | "update-check";
 
 interface Theme {
   name: string;
@@ -90,6 +91,121 @@ const themes: Record<string, Theme> = {
       onlineGlow: "rgba(48, 209, 88, 0.6)",
     },
   },
+    darkPurple: {
+    name: "darkPurple",
+    displayName: "Dark Purple",
+    background: {
+      primary: "rgba(24, 18, 43, 0.85)",
+      secondary: "rgba(167, 139, 250, 0.08)",
+      hover: "rgba(167, 139, 250, 0.12)",
+      active: "rgba(167, 139, 250, 0.18)",
+      modal: "rgba(24, 18, 43, 0.95)",
+      modalOverlay: "rgba(0, 0, 0, 0.6)",
+    },
+    text: {
+      primary: "#ede9fe",
+      secondary: "#c4b5fd",
+      tertiary: "#a78bfa",
+    },
+    accent: {
+      primary: "#a78bfa",
+      hover: "#c4b5fd",
+      glow: "rgba(167, 139, 250, 0.35)",
+      glowStrong: "rgba(167, 139, 250, 0.65)",
+    },
+    divider: "#3b2f5f",
+    status: {
+      online: "#a78bfa",
+      onlineGlow: "rgba(167, 139, 250, 0.6)",
+    },
+  },
+
+  darkGreen: {
+    name: "darkGreen",
+    displayName: "Dark Green",
+    background: {
+      primary: "rgba(16, 28, 24, 0.85)",
+      secondary: "rgba(52, 211, 153, 0.08)",
+      hover: "rgba(52, 211, 153, 0.12)",
+      active: "rgba(52, 211, 153, 0.18)",
+      modal: "rgba(16, 28, 24, 0.95)",
+      modalOverlay: "rgba(0, 0, 0, 0.6)",
+    },
+    text: {
+      primary: "#ecfdf5",
+      secondary: "#a7f3d0",
+      tertiary: "#6ee7b7",
+    },
+    accent: {
+      primary: "#34d399",
+      hover: "#6ee7b7",
+      glow: "rgba(52, 211, 153, 0.35)",
+      glowStrong: "rgba(52, 211, 153, 0.65)",
+    },
+    divider: "#1f3d34",
+    status: {
+      online: "#34d399",
+      onlineGlow: "rgba(52, 211, 153, 0.6)",
+    },
+  },
+
+  darkRed: {
+    name: "darkRed",
+    displayName: "Dark Red",
+    background: {
+      primary: "rgba(32, 18, 18, 0.85)",
+      secondary: "rgba(239, 68, 68, 0.08)",
+      hover: "rgba(239, 68, 68, 0.12)",
+      active: "rgba(239, 68, 68, 0.18)",
+      modal: "rgba(32, 18, 18, 0.95)",
+      modalOverlay: "rgba(0, 0, 0, 0.6)",
+    },
+    text: {
+      primary: "#fee2e2",
+      secondary: "#fca5a5",
+      tertiary: "#f87171",
+    },
+    accent: {
+      primary: "#ef4444",
+      hover: "#f87171",
+      glow: "rgba(239, 68, 68, 0.35)",
+      glowStrong: "rgba(239, 68, 68, 0.65)",
+    },
+    divider: "#4b1f1f",
+    status: {
+      online: "#ef4444",
+      onlineGlow: "rgba(239, 68, 68, 0.6)",
+    },
+  },
+
+  darkAmber: {
+    name: "darkAmber",
+    displayName: "Dark Amber",
+    background: {
+      primary: "rgba(33, 26, 14, 0.85)",
+      secondary: "rgba(245, 158, 11, 0.08)",
+      hover: "rgba(245, 158, 11, 0.12)",
+      active: "rgba(245, 158, 11, 0.18)",
+      modal: "rgba(33, 26, 14, 0.95)",
+      modalOverlay: "rgba(0, 0, 0, 0.6)",
+    },
+    text: {
+      primary: "#fffbeb",
+      secondary: "#fde68a",
+      tertiary: "#fcd34d",
+    },
+    accent: {
+      primary: "#f59e0b",
+      hover: "#fbbf24",
+      glow: "rgba(245, 158, 11, 0.35)",
+      glowStrong: "rgba(245, 158, 11, 0.65)",
+    },
+    divider: "#4a3a17",
+    status: {
+      online: "#f59e0b",
+      onlineGlow: "rgba(245, 158, 11, 0.6)",
+    },
+  },
 };
 
 interface ThemeContextType {
@@ -166,8 +282,16 @@ function AppContent() {
     await window.hide();
   };
 
+  const handleQuit = async () => {
+    try {
+      await invoke("quit_app");
+    } catch (error) {
+      console.error("Error quitting:", error);
+    }
+  };
+
   const handleCheckUpdates = () => {
-    console.log("Checking for updates...");
+    setActiveModal("update-check");
   };
 
   return (
@@ -264,7 +388,7 @@ function AppContent() {
 
             <div className="menu-section">
               <MenuItem label="Settings" shortcut="⌘ /" onClick={() => setActiveModal("settings")} />
-              <MenuItem label="Quit" shortcut="⌘ Q" onClick={handleClose} />
+              <MenuItem label="Quit" shortcut="⌘ Q" onClick={handleQuit} />
             </div>
           </div>
         ) : (
@@ -310,7 +434,7 @@ function AppContent() {
           >
             <div className="modal-header" style={{ borderBottomColor: theme.divider }}>
               <h3 style={{ color: theme.text.primary }}>
-                {activeModal === "settings" ? "Settings" : "About Evolux"}
+                {activeModal === "settings" ? "Settings" : activeModal === "about" ? "About Evolux" : "Check for Updates"}
               </h3>
               <button
                 className="modal-close"
@@ -323,7 +447,9 @@ function AppContent() {
               </button>
             </div>
             <div className="modal-body" style={{ color: theme.text.primary }}>
-              {activeModal === "settings" ? <SettingsContent /> : <AboutContent />}
+              {activeModal === "settings" && <SettingsContent />}
+              {activeModal === "about" && <AboutContent />}
+              {activeModal === "update-check" && <UpdateCheckContent />}
             </div>
           </div>
         </div>
@@ -339,12 +465,23 @@ function AppContent() {
           font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
+        html, body, #root {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+
         .app-container {
           width: 100%;
-          min-height: 100vh;
+          height: 100vh;
           backdrop-filter: blur(20px);
           animation: slideDown 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
           transition: background-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
 
         @keyframes slideDown {
@@ -365,6 +502,7 @@ function AppContent() {
           padding: 12px 16px;
           border-bottom: 1px solid;
           transition: border-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          flex-shrink: 0;
         }
 
         .header-left {
@@ -442,6 +580,8 @@ function AppContent() {
         }
 
         .content-wrapper {
+          flex: 1;
+          overflow: hidden;
           transition: opacity 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
@@ -451,6 +591,13 @@ function AppContent() {
 
         .menu-content {
           animation: fadeIn 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+          height: 100%;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .menu-content::-webkit-scrollbar {
+          display: none;
         }
 
         @keyframes fadeIn {
@@ -476,6 +623,10 @@ function AppContent() {
 
         .view-content {
           animation: viewSlideIn 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
         }
 
         @keyframes viewSlideIn {
@@ -493,6 +644,7 @@ function AppContent() {
           padding: 12px 16px;
           border-bottom: 1px solid;
           transition: border-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          flex-shrink: 0;
         }
 
         .back-button {
@@ -519,7 +671,26 @@ function AppContent() {
 
         .view-body {
           padding: 16px;
-          min-height: 200px;
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .view-body::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .view-body::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .view-body::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+
+        .view-body::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.15);
         }
 
         .view-placeholder {
@@ -557,8 +728,9 @@ function AppContent() {
           backdrop-filter: blur(20px);
           border-radius: 12px;
           border: 1px solid;
-          width: 320px;
-          max-height: 500px;
+          width: 90%;
+          max-width: 400px;
+          max-height: 80vh;
           overflow: hidden;
           animation: modalSlideIn 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -583,6 +755,7 @@ function AppContent() {
           padding: 16px;
           border-bottom: 1px solid;
           transition: border-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          flex-shrink: 0;
         }
 
         .modal-header h3 {
@@ -613,6 +786,50 @@ function AppContent() {
           font-weight: 300;
           line-height: 1.6;
           transition: color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          max-height: calc(80vh - 65px);
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .modal-body::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes checkmark {
+          0% {
+            stroke-dashoffset: 50;
+          }
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
       `}</style>
     </div>
@@ -728,6 +945,222 @@ function WorkloadView() {
         WorkLoad
       </h3>
       <p>Current workload overview</p>
+    </div>
+  );
+}
+
+function UpdateCheckContent() {
+  const { theme } = useTheme();
+  const [status, setStatus] = useState<"checking" | "up-to-date" | "available" | "error">("checking");
+  const [updateInfo, setUpdateInfo] = useState<any>(null);
+
+  useEffect(() => {
+    checkForUpdates();
+  }, []);
+
+  const checkForUpdates = async () => {
+    try {
+      setStatus("checking");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const response = await fetch("https://api.github.com/repos/xiiiter/Productivity-SystemTray/releases/latest");
+      const data = await response.json();
+      
+      const currentVersion = "0.1.0";
+      const latestVersion = data.tag_name?.replace("v", "") || "0.1.0";
+      
+      if (latestVersion > currentVersion) {
+        setUpdateInfo({
+          version: latestVersion,
+          url: data.html_url,
+          notes: data.body,
+        });
+        setStatus("available");
+      } else {
+        setStatus("up-to-date");
+      }
+    } catch (error) {
+      console.error("Error checking updates:", error);
+      setStatus("error");
+    }
+  };
+
+  const openUpdateURL = () => {
+    if (updateInfo?.url) {
+      window.open(updateInfo.url, "_blank");
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", padding: "20px 0" }}>
+      {status === "checking" && (
+        <>
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              border: `3px solid ${theme.background.secondary}`,
+              borderTop: `3px solid ${theme.accent.primary}`,
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          <div style={{ textAlign: "center" }}>
+            <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "8px" }}>
+              Checking for updates...
+            </h4>
+            <p style={{ color: theme.text.secondary, fontSize: "12px" }}>
+              Please wait while we check for the latest version
+            </p>
+          </div>
+        </>
+      )}
+
+      {status === "up-to-date" && (
+        <>
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              background: `${theme.accent.primary}20`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.accent.primary}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                strokeDasharray: 50,
+                animation: "checkmark 0.5s ease-in-out",
+              }}
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "8px" }}>
+              You're up to date!
+            </h4>
+            <p style={{ color: theme.text.secondary, fontSize: "12px" }}>
+              You have the latest version installed (v0.1.0)
+            </p>
+          </div>
+        </>
+      )}
+
+      {status === "available" && updateInfo && (
+        <>
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              background: `${theme.accent.primary}20`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.accent.primary}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ animation: "pulse 2s ease-in-out infinite" }}
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </div>
+          <div style={{ textAlign: "center", width: "100%" }}>
+            <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "8px" }}>
+              Update available!
+            </h4>
+            <p style={{ color: theme.text.secondary, fontSize: "12px", marginBottom: "16px" }}>
+              Version {updateInfo.version} is now available
+            </p>
+            <button
+              onClick={openUpdateURL}
+              style={{
+                background: theme.accent.primary,
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 20px",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+                boxShadow: `0 4px 12px ${theme.accent.glow}`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = `0 6px 16px ${theme.accent.glowStrong}`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = `0 4px 12px ${theme.accent.glow}`;
+              }}
+            >
+              Download Update
+            </button>
+          </div>
+        </>
+      )}
+
+      {status === "error" && (
+        <>
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              background: "rgba(239, 68, 68, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <h4 style={{ color: theme.text.primary, fontSize: "14px", fontWeight: 500, marginBottom: "8px" }}>
+              Unable to check for updates
+            </h4>
+            <p style={{ color: theme.text.secondary, fontSize: "12px" }}>
+              Please check your internet connection and try again
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

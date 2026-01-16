@@ -7,6 +7,7 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             use tauri::{
                 menu::{Menu, MenuItemBuilder},
@@ -19,7 +20,7 @@ fn main() {
 
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
-                .tooltip("Productivity App")
+                .tooltip("Productivity")
                 .icon(app.default_window_icon().unwrap().clone())
                 .on_menu_event(|app, event| {
                     if event.id().as_ref() == "quit" {

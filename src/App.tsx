@@ -175,7 +175,7 @@ function AppContent() {
       <div className="header" style={{ borderBottomColor: theme.divider }}>
         <div className="header-left">
           <div className="logo">
-            <img src="../assets/logo.png" alt="Logo" />
+            <img src="/logo.png" alt="Logo" />
           </div>
           <span className="header-title" style={{ color: theme.text.primary }}>
             Productivity

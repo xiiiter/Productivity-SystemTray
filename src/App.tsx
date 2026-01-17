@@ -39,7 +39,7 @@ const themes: Record<string, Theme> = {
     name: "darkBlue",
     displayName: "Dark Blue",
     background: {
-      primary: "rgba(26, 31, 43, 0.85)",
+      primary: "rgba(26, 31, 43, 0.95)",
       secondary: "rgba(96, 165, 250, 0.08)",
       hover: "rgba(96, 165, 250, 0.12)",
       active: "rgba(96, 165, 250, 0.18)",
@@ -67,7 +67,7 @@ const themes: Record<string, Theme> = {
     name: "darkNeutral",
     displayName: "Dark Neutral",
     background: {
-      primary: "rgba(28, 28, 30, 0.85)",
+      primary: "rgba(28, 28, 30, 0.95)",
       secondary: "rgba(255, 255, 255, 0.06)",
       hover: "rgba(255, 255, 255, 0.08)",
       active: "rgba(255, 255, 255, 0.12)",
@@ -95,7 +95,7 @@ const themes: Record<string, Theme> = {
     name: "darkPurple",
     displayName: "Dark Purple",
     background: {
-      primary: "rgba(24, 18, 43, 0.85)",
+      primary: "rgba(24, 18, 43, 0.95)",
       secondary: "rgba(167, 139, 250, 0.08)",
       hover: "rgba(167, 139, 250, 0.12)",
       active: "rgba(167, 139, 250, 0.18)",
@@ -124,7 +124,7 @@ const themes: Record<string, Theme> = {
     name: "darkGreen",
     displayName: "Dark Green",
     background: {
-      primary: "rgba(16, 28, 24, 0.85)",
+      primary: "rgba(16, 28, 24, 0.95)",
       secondary: "rgba(52, 211, 153, 0.08)",
       hover: "rgba(52, 211, 153, 0.12)",
       active: "rgba(52, 211, 153, 0.18)",
@@ -153,7 +153,7 @@ const themes: Record<string, Theme> = {
     name: "darkRed",
     displayName: "Dark Red",
     background: {
-      primary: "rgba(32, 18, 18, 0.85)",
+      primary: "rgba(32, 18, 18, 0.95)",
       secondary: "rgba(239, 68, 68, 0.08)",
       hover: "rgba(239, 68, 68, 0.12)",
       active: "rgba(239, 68, 68, 0.18)",
@@ -182,7 +182,7 @@ const themes: Record<string, Theme> = {
     name: "darkAmber",
     displayName: "Dark Amber",
     background: {
-      primary: "rgba(33, 26, 14, 0.85)",
+      primary: "rgba(33, 26, 14, 0.95)",
       secondary: "rgba(245, 158, 11, 0.08)",
       hover: "rgba(245, 158, 11, 0.12)",
       active: "rgba(245, 158, 11, 0.18)",

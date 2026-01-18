@@ -1,9 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+// Import modules
+mod commands;
+mod models;
+mod services;
+mod integrations;
+mod shared;
 
 fn main() {
     tauri::Builder::default()
@@ -75,7 +77,53 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            // Branch commands
+            commands::get_all_branches,
+            commands::get_branch_by_id,
+            commands::select_branch,
+            commands::clear_branch,
+            commands::validate_branch,
+            
+            // Task/Inbox commands
+            commands::get_tasks,
+            commands::get_task_by_id,
+            commands::create_task,
+            commands::update_task,
+            commands::delete_task,
+            commands::get_task_stats,
+            commands::mark_task_complete,
+            commands::assign_task,
+            
+            // Metrics commands
+            commands::get_branch_metrics,
+            commands::get_user_metrics,
+            commands::export_metrics,
+            commands::get_metrics_forecast,
+            commands::get_productivity_score,
+            commands::compare_periods,
+            
+            // Notification commands
+            commands::get_notifications,
+            commands::mark_notification_as_read,
+            commands::mark_all_notifications_as_read,
+            commands::get_notification_stats,
+            commands::get_unread_count,
+            commands::update_notification_settings,
+            commands::delete_notification,
+            
+            // Workload commands
+            commands::get_workload,
+            commands::get_workload_summary,
+            commands::validate_work_hours,
+            commands::create_workload_exception,
+            commands::approve_workload_exception,
+            commands::get_work_status,
+            commands::check_if_can_work,
+            commands::get_weekly_schedule,
+            commands::update_workload,
+            commands::get_overtime_hours,
+        ])
         .run(tauri::generate_context!())
         .expect("erro ao executar aplicação tauri");
 }

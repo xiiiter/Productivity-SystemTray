@@ -2,6 +2,12 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 
+// Import view components
+import { SelectBranch } from "./views/SelectBranch";
+import { ViewMetrics } from "./views/ViewMetrics";
+import { YourProductivity } from "./views/YourProductivity";
+import { ViewWorkload } from "./views/ViewWorkload";
+
 type View = "menu" | "select-branch" | "metrics" | "productivity" | "workload";
 type Modal = null | "settings" | "about" | "update-check";
 
@@ -39,7 +45,7 @@ const themes: Record<string, Theme> = {
     name: "darkBlue",
     displayName: "Dark Blue",
     background: {
-      primary: "rgba(26, 31, 43, 0.95)",
+      primary: "rgba(26, 31, 43, 0.85)",
       secondary: "rgba(96, 165, 250, 0.08)",
       hover: "rgba(96, 165, 250, 0.12)",
       active: "rgba(96, 165, 250, 0.18)",
@@ -67,7 +73,7 @@ const themes: Record<string, Theme> = {
     name: "darkNeutral",
     displayName: "Dark Neutral",
     background: {
-      primary: "rgba(28, 28, 30, 0.95)",
+      primary: "rgba(28, 28, 30, 0.85)",
       secondary: "rgba(255, 255, 255, 0.06)",
       hover: "rgba(255, 255, 255, 0.08)",
       active: "rgba(255, 255, 255, 0.12)",
@@ -91,11 +97,11 @@ const themes: Record<string, Theme> = {
       onlineGlow: "rgba(48, 209, 88, 0.6)",
     },
   },
-    darkPurple: {
+  darkPurple: {
     name: "darkPurple",
     displayName: "Dark Purple",
     background: {
-      primary: "rgba(24, 18, 43, 0.95)",
+      primary: "rgba(24, 18, 43, 0.85)",
       secondary: "rgba(167, 139, 250, 0.08)",
       hover: "rgba(167, 139, 250, 0.12)",
       active: "rgba(167, 139, 250, 0.18)",
@@ -119,12 +125,11 @@ const themes: Record<string, Theme> = {
       onlineGlow: "rgba(167, 139, 250, 0.6)",
     },
   },
-
   darkGreen: {
     name: "darkGreen",
     displayName: "Dark Green",
     background: {
-      primary: "rgba(16, 28, 24, 0.95)",
+      primary: "rgba(16, 28, 24, 0.85)",
       secondary: "rgba(52, 211, 153, 0.08)",
       hover: "rgba(52, 211, 153, 0.12)",
       active: "rgba(52, 211, 153, 0.18)",
@@ -148,12 +153,11 @@ const themes: Record<string, Theme> = {
       onlineGlow: "rgba(52, 211, 153, 0.6)",
     },
   },
-
   darkRed: {
     name: "darkRed",
     displayName: "Dark Red",
     background: {
-      primary: "rgba(32, 18, 18, 0.95)",
+      primary: "rgba(32, 18, 18, 0.85)",
       secondary: "rgba(239, 68, 68, 0.08)",
       hover: "rgba(239, 68, 68, 0.12)",
       active: "rgba(239, 68, 68, 0.18)",
@@ -177,12 +181,11 @@ const themes: Record<string, Theme> = {
       onlineGlow: "rgba(239, 68, 68, 0.6)",
     },
   },
-
   darkAmber: {
     name: "darkAmber",
     displayName: "Dark Amber",
     background: {
-      primary: "rgba(33, 26, 14, 0.95)",
+      primary: "rgba(33, 26, 14, 0.85)",
       secondary: "rgba(245, 158, 11, 0.08)",
       hover: "rgba(245, 158, 11, 0.12)",
       active: "rgba(245, 158, 11, 0.18)",
@@ -208,6 +211,38 @@ const themes: Record<string, Theme> = {
   },
 };
 
+interface ThemeMeta {
+  title: string;
+  description: string;
+}
+
+const themeMeta: Record<string, ThemeMeta> = {
+  darkBlue: {
+    title: "Dark Blue",
+    description: "Professional dark theme with blue accents focused on clarity and focus.",
+  },
+  darkNeutral: {
+    title: "Dark Neutral",
+    description: "Minimalist neutral palette designed for long sessions and reduced eye strain.",
+  },
+  darkPurple: {
+    title: "Dark Purple",
+    description: "Creative dark theme with subtle purple highlights for a modern aesthetic.",
+  },
+  darkGreen: {
+    title: "Dark Green",
+    description: "Calm and balanced theme with green accents inspired by productivity tools.",
+  },
+  darkRed: {
+    title: "Dark Red",
+    description: "Bold dark theme with red accents for high-contrast environments.",
+  },
+  darkAmber: {
+    title: "Dark Amber",
+    description: "Warm dark theme with amber highlights, ideal for night-time usage.",
+  },
+};
+
 interface ThemeContextType {
   theme: Theme;
   themeName: string;
@@ -227,7 +262,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function useTheme() {
+export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("useTheme must be used within ThemeProvider");
   return context;
@@ -409,10 +444,10 @@ function AppContent() {
               </button>
             </div>
             <div className="view-body">
-              {currentView === "select-branch" && <SelectBranchView />}
-              {currentView === "metrics" && <MetricsView />}
-              {currentView === "productivity" && <ProductivityView />}
-              {currentView === "workload" && <WorkloadView />}
+              {currentView === "select-branch" && <SelectBranch />}
+              {currentView === "metrics" && <ViewMetrics />}
+              {currentView === "productivity" && <YourProductivity />}
+              {currentView === "workload" && <ViewWorkload />}
             </div>
           </div>
         )}
@@ -670,34 +705,8 @@ function AppContent() {
         }
 
         .view-body {
-          padding: 16px;
           flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-        }
-
-        .view-body::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .view-body::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .view-body::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 3px;
-        }
-
-        .view-body::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.15);
-        }
-
-        .view-placeholder {
-          font-size: 14px;
-          font-weight: 300;
-          text-align: center;
-          padding: 40px 20px;
+          overflow: hidden;
         }
 
         .modal-overlay {
@@ -899,52 +908,6 @@ function MenuItem({
           {shortcut}
         </span>
       )}
-    </div>
-  );
-}
-
-function SelectBranchView() {
-  const { theme } = useTheme();
-  return (
-    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
-      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>
-        Select Branch
-      </h3>
-      <p>Branch selection interface</p>
-    </div>
-  );
-}
-
-function MetricsView() {
-  const { theme } = useTheme();
-  return (
-    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
-      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>Metrics</h3>
-      <p>Analytics and metrics dashboard</p>
-    </div>
-  );
-}
-
-function ProductivityView() {
-  const { theme } = useTheme();
-  return (
-    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
-      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>
-        Your Productivity
-      </h3>
-      <p>Personal productivity insights</p>
-    </div>
-  );
-}
-
-function WorkloadView() {
-  const { theme } = useTheme();
-  return (
-    <div className="view-placeholder" style={{ color: theme.text.secondary }}>
-      <h3 style={{ color: theme.text.primary, marginBottom: "8px", fontSize: "15px", fontWeight: 500 }}>
-        WorkLoad
-      </h3>
-      <p>Current workload overview</p>
     </div>
   );
 }
@@ -1308,7 +1271,7 @@ function ThemeOption({
           {t.displayName}
         </div>
         <div style={{ fontSize: "11px", color: theme.text.secondary }}>
-          {t.name === "darkBlue" ? "Blue accent with dark background" : "Neutral gray with subtle accents"}
+          {themeMeta[t.name]?.description}
         </div>
       </div>
       {isSelected && (

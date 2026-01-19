@@ -4,7 +4,7 @@ import { useBranch } from '../hooks/useBranch';
 import { useInbox } from '../hooks/useInbox';
 import { TaskCard } from '../components/cards/TaskCard';
 import { CreateTaskModal } from '../components/modals/CreateTaskModal';
-import { TaskFilter, TaskStatus } from '../types/task.types';
+import { TaskFilter, TaskStatus } from '../types/task_types';
 
 export function Inbox() {
   const { theme } = useTheme();

@@ -17,17 +17,18 @@
     "windows": [
       {
         "label": "popup",
-        "title": "Popup",
+        "title": "Productivity",
         "width": 350,
         "height": 400,
         "resizable": false,
         "fullscreen": false,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "visible": false,
-        "center": true
+        "center": false,
+        "focusable": true
       }
     ],
 

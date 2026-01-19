@@ -1,5 +1,4 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 
 // Import view components
@@ -283,11 +282,8 @@ function AppContent() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    const setup = async () => {
-      const window = getCurrentWebviewWindow();
-      await window.setDecorations(false);
-    };
-    setup();
+    // Decorations já está configurado no tauri.conf.json
+    // Não precisa fazer nada aqui no setup
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -330,7 +326,10 @@ function AppContent() {
   };
 
   return (
-    <div className="app-container" style={{ backgroundColor: theme.background.primary }}>
+    <div className="app-container" style={{ 
+      backgroundColor: theme.background.primary,
+      color: theme.text.primary 
+    }}>
       <div className="header" style={{ borderBottomColor: theme.divider }}>
         <div className="header-left">
           <div className="logo">
@@ -511,12 +510,13 @@ function AppContent() {
         .app-container {
           width: 100%;
           height: 100vh;
-          backdrop-filter: blur(20px);
+          background: #1a1f2b; /* Fallback background */
           animation: slideDown 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
           transition: background-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          border-radius: 12px;
         }
 
         @keyframes slideDown {

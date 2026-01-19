@@ -1,8 +1,8 @@
-// frontend/hooks/useNotifications.ts
+// src/hooks/useNotifications.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { notificationService } from '../services/notification.service';
-import { Notification, NotificationFilter } from '../types/notification.types';
+import { notificationService } from '../services/notification_service';
+import { Notification } from '../types/notification_types';
 
 export function useNotifications(userId: string) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -19,11 +19,14 @@ export function useNotifications(userId: string) {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const response = await notificationService.getNotifications(userId);
-      setNotifications(response.notifications);
-      setUnreadCount(response.unreadCount);
+      const data = await notificationService.getNotifications(userId);
+      setNotifications(data);
+      
+      const count = await notificationService.getUnreadCount(userId);
+      setUnreadCount(count);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load notifications');
+      console.error('Error loading notifications:', err);
     } finally {
       setLoading(false);
     }
@@ -31,12 +34,12 @@ export function useNotifications(userId: string) {
 
   const markAsRead = useCallback(async (notificationIds: string[]) => {
     try {
-      await notificationService.markAsRead(userId, notificationIds);
+      await notificationService.markAsRead(notificationIds);
       await loadNotifications();
     } catch (err) {
       console.error('Failed to mark as read:', err);
     }
-  }, [userId]);
+  }, []);
 
   const markAllAsRead = useCallback(async () => {
     try {

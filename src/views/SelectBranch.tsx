@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useBranch } from '../hooks/useBranch';
 import { useTheme } from '../App'; // Seu ThemeContext existente
-import { Branch } from '../types/branch.types';
+import { Branch } from '../types/branch_types';
 
 export function SelectBranch() {
   const { theme } = useTheme();

@@ -1,7 +1,7 @@
 // src/components/cards/TaskCard.tsx
 
 import { useState } from 'react';
-import { Task, TaskStatus, UpdateTaskInput } from '../types/task.types';
+import { Task, TaskStatus, UpdateTaskInput } from '../../types/task_types';
 
 interface TaskCardProps {
   task: Task;

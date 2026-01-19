@@ -1,7 +1,7 @@
 // src/components/modals/CreateTaskModal.tsx
 
 import { useState } from 'react';
-import { CreateTaskInput, TaskPriority } from '../../types/task.types';
+import { CreateTaskInput, TaskPriority } from '../../types/task_types';
 
 interface CreateTaskModalProps {
   onClose: () => void;

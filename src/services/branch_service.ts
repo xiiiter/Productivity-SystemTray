@@ -1,7 +1,7 @@
 // src/services/branch_service.ts
 
 import { invoke } from "@tauri-apps/api/core";
-import { Branch, BranchListResponse, BranchStats } from "../types/branch.types";
+import { Branch, BranchListResponse, BranchStats } from "../types/branch_types";
 
 class BranchService {
   async listBranches(): Promise<Branch[]> {

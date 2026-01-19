@@ -1,8 +1,8 @@
-// frontend/hooks/useInbox.ts
+// src/hooks/useInbox.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { inboxService } from '../services/inbox.service';
-import { Task, TaskFilter, CreateTaskRequest, UpdateTaskRequest } from '../types/task.types';
+import { taskService } from '../services/task_service';
+import { Task, TaskFilter, CreateTaskInput, UpdateTaskInput } from '../types/task_types';
 
 export function useInbox(filter?: TaskFilter) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -16,30 +16,46 @@ export function useInbox(filter?: TaskFilter) {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const response = await inboxService.getTasks(filter);
-      setTasks(response.tasks);
+      const data = await taskService.getTasks(filter);
+      setTasks(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tasks');
+      console.error('Error loading tasks:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const createTask = useCallback(async (request: CreateTaskRequest) => {
-    const newTask = await inboxService.createTask(request);
-    setTasks(prev => [newTask, ...prev]);
-    return newTask;
+  const createTask = useCallback(async (input: CreateTaskInput) => {
+    try {
+      const newTask = await taskService.createTask(input);
+      setTasks(prev => [newTask, ...prev]);
+      return newTask;
+    } catch (err) {
+      console.error('Error creating task:', err);
+      throw err;
+    }
   }, []);
 
-  const updateTask = useCallback(async (request: UpdateTaskRequest) => {
-    const updated = await inboxService.updateTask(request);
-    setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
-    return updated;
+  const updateTask = useCallback(async (taskId: string, input: UpdateTaskInput) => {
+    try {
+      const updated = await taskService.updateTask(taskId, input);
+      setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+      return updated;
+    } catch (err) {
+      console.error('Error updating task:', err);
+      throw err;
+    }
   }, []);
 
   const deleteTask = useCallback(async (taskId: string) => {
-    await inboxService.deleteTask(taskId);
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    try {
+      await taskService.deleteTask(taskId);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      throw err;
+    }
   }, []);
 
   return {

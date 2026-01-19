@@ -1,6 +1,6 @@
 // src/components/cards/NotificationCard.tsx
 
-import { Notification, NotificationType } from '../../types/notification.types';
+import { Notification, NotificationType } from '../../types/notification_types';
 
 interface NotificationCardProps {
   notification: Notification;

@@ -1,7 +1,7 @@
-// frontend/hooks/useBranch.ts
+// src/hooks/useBranch.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { branchService } from '../services/branch.service';
+import { branchService } from '../services/branch_service';
 import { Branch } from '../types/branch_types';
 
 export function useBranch() {
@@ -12,48 +12,43 @@ export function useBranch() {
 
   useEffect(() => {
     loadBranches();
+    loadCurrentBranch();
   }, []);
 
   const loadBranches = async () => {
     try {
       setLoading(true);
-      const data = await branchService.getAllBranches();
+      const data = await branchService.listBranches();
       setBranches(data);
-      
-      // Set first active branch as current if none selected
-      if (!currentBranch && data.length > 0) {
-        const activeBranch = data.find(b => b.active) || data[0];
-        setCurrentBranch(activeBranch);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load branches');
+      console.error('Error loading branches:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadCurrentBranch = async () => {
+    try {
+      const branch = await branchService.getCurrentBranch();
+      setCurrentBranch(branch);
+    } catch (err) {
+      console.error('Error loading current branch:', err);
+    }
+  };
+
   const selectBranch = useCallback(async (branchId: string) => {
     try {
-      const userId = "current_user"; // TODO: Get from auth context
-      await branchService.selectBranch(branchId, userId);
+      await branchService.selectBranch(branchId);
       const branch = branches.find(b => b.id === branchId);
       if (branch) {
         setCurrentBranch(branch);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to select branch');
+      throw err;
     }
   }, [branches]);
-
-  const clearBranch = useCallback(async () => {
-    try {
-      const userId = "current_user"; // TODO: Get from auth context
-      await branchService.clearBranch(userId);
-      setCurrentBranch(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear branch');
-    }
-  }, []);
 
   return {
     branches,
@@ -61,7 +56,6 @@ export function useBranch() {
     loading,
     error,
     selectBranch,
-    clearBranch,
     refresh: loadBranches,
   };
 }

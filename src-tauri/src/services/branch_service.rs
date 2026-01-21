@@ -1,55 +1,58 @@
-// src-tauri/src/services/branch_service.rs
-
 use crate::models::branch::{Branch, BranchSelection, BranchConfig};
-use crate::integrations::google_sheets::SheetsClient;
+use crate::services::sheets_service::SheetsService;
 use crate::shared::error::AppError;
 use chrono::Utc;
+use tauri::AppHandle;
 
 pub struct BranchService {
-    sheets: SheetsClient,
+    sheets: SheetsService,
 }
 
 impl BranchService {
-    pub async fn new() -> Result<Self, AppError> {
-        let sheets = SheetsClient::new().await?;
+    pub async fn new(app: &AppHandle) -> Result<Self, AppError> {
+        let sheets = SheetsService::new(app).await?;
         Ok(Self { sheets })
     }
 
     pub async fn get_all_branches(&self) -> Result<Vec<Branch>, AppError> {
-        let range = "Branches!A2:E";
-        let values = self.sheets.read_range(range).await?;
-
+        let rows = self.sheets.get_branches().await?;
+        
         let mut branches = Vec::new();
-        for row in values {
-            if row.len() >= 5 {
-                let config: BranchConfig = match serde_json::from_str(&row[4]) {
-                    Ok(c) => c,
-                    Err(_) => BranchConfig::default(),
+        for row in rows {
+            if row.data.len() >= 4 {
+                let config = if row.data.len() >= 5 && !row.data[4].is_empty() {
+                    serde_json::from_str(&row.data[4]).unwrap_or_default()
+                } else {
+                    BranchConfig::default()
                 };
 
                 branches.push(Branch {
-                    id: row[0].to_string(),
-                    name: row[1].to_string(),
-                    manager: row[2].to_string(),
-                    active: row[3].to_lowercase() == "true",
+                    id: row.data[0].clone(),
+                    name: row.data[1].clone(),
+                    manager: row.data[2].clone(),
+                    active: row.data[4].to_lowercase() == "true" || row.data[4] == "1" || row.data[4].to_lowercase() == "yes" || row.data[4].to_lowercase() == "active" || row.data[4].to_lowercase() == "enabled" || row.data[4].to_lowercase() == "on" || row.data[4].to_lowercase() == "verdadeiro",
                     config,
+                    created_at: if row.data.len() >= 6 { row.data[5].clone() } else { Utc::now().to_rfc3339() },
                 });
             }
         }
-
         Ok(branches)
     }
 
-    pub async fn get_branch_by_id(&self, branch_id: &str) -> Result<Branch, AppError> {
+    pub async fn get_branch_by_id(&self, id: &str) -> Result<Branch, AppError> {
         let branches = self.get_all_branches().await?;
-        branches
-            .into_iter()
-            .find(|b| b.id == branch_id)
-            .ok_or_else(|| AppError::NotFound("Branch not found".to_string()))
+        branches.into_iter()
+            .find(|b| b.id == id)
+            .ok_or_else(|| AppError::NotFound(format!("Branch not found: {}", id)))
     }
 
-    pub async fn select_branch(&self, branch_id: &str, user_id: &str) -> Result<BranchSelection, AppError> {
-        self.get_branch_by_id(branch_id).await?;
+    pub async fn select_branch(&self, user_id: &str, branch_id: &str) -> Result<BranchSelection, AppError> {
+        let branch = self.get_branch_by_id(branch_id).await?;
+        if !branch.active {
+            return Err(AppError::NotFound("Cannot select inactive branch".into()));
+        }
+
+        self.sheets.set_user_selection(user_id, branch_id).await?;
 
         Ok(BranchSelection {
             branch_id: branch_id.to_string(),
@@ -58,14 +61,31 @@ impl BranchService {
         })
     }
 
-    pub async fn clear_branch(&self, _user_id: &str) -> Result<(), AppError> {
-        Ok(())
+    pub async fn get_current_branch(&self, user_id: &str) -> Result<Option<Branch>, AppError> {
+        if let Some(selection) = self.sheets.get_user_selection(user_id).await? {
+            if selection.data.len() >= 2 {
+                let branch_id = &selection.data[1];
+                match self.get_branch_by_id(branch_id).await {
+                    Ok(branch) if branch.active => Ok(Some(branch)),
+                    _ => Ok(None),
+                }
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
     }
 
-    pub async fn validate_branch(&self, branch_id: &str, _user_id: &str) -> Result<bool, AppError> {
-        match self.get_branch_by_id(branch_id).await {
-            Ok(branch) => Ok(branch.active),
-            Err(_) => Ok(false),
+    pub async fn clear_branch(&self, user_id: &str) -> Result<(), AppError> {
+        if let Some(selection) = self.sheets.get_user_selection(user_id).await? {
+            let empty_data = vec![
+                user_id.to_string(),
+                String::new(),
+                Utc::now().to_rfc3339(),
+            ];
+            self.sheets.update_user_selection(selection.row_number, empty_data).await?;
         }
+        Ok(())
     }
 }

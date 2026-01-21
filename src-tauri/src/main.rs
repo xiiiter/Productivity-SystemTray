@@ -1,6 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Import modules
 mod commands;
 mod models;
 mod services;
@@ -43,13 +42,11 @@ fn main() {
                                     let _ = window.hide();
                                 }
                                 _ => {
-                                    // Posicionar próximo ao system tray (canto inferior direito)
                                     if let Ok(monitor) = window.current_monitor() {
                                         if let Some(monitor) = monitor {
                                             let screen_size = monitor.size();
                                             let window_size = window.outer_size().unwrap_or_default();
                                             
-                                            // Posição: canto inferior direito com margem
                                             let x = screen_size.width as i32 - window_size.width as i32 - 10;
                                             let y = screen_size.height as i32 - window_size.height as i32 - 50;
                                             
@@ -82,47 +79,28 @@ fn main() {
             commands::get_all_branches,
             commands::get_branch_by_id,
             commands::select_branch,
+            commands::get_current_branch,
             commands::clear_branch,
-            commands::validate_branch,
             
             // Task/Inbox commands
             commands::get_tasks,
-            commands::get_task_by_id,
             commands::create_task,
-            commands::update_task,
+            commands::update_task_status,
             commands::delete_task,
-            commands::get_task_stats,
             commands::mark_task_complete,
-            commands::assign_task,
             
             // Metrics commands
             commands::get_branch_metrics,
-            commands::get_user_metrics,
-            commands::export_metrics,
-            commands::get_metrics_forecast,
-            commands::get_productivity_score,
-            commands::compare_periods,
             
             // Notification commands
             commands::get_notifications,
             commands::mark_notification_as_read,
             commands::mark_all_notifications_as_read,
-            commands::get_notification_stats,
-            commands::get_unread_count,
-            commands::update_notification_settings,
-            commands::delete_notification,
+            commands::create_notification,
             
             // Workload commands
             commands::get_workload,
-            commands::get_workload_summary,
-            commands::validate_work_hours,
-            commands::create_workload_exception,
-            commands::approve_workload_exception,
-            commands::get_work_status,
-            commands::check_if_can_work,
             commands::get_weekly_schedule,
-            commands::update_workload,
-            commands::get_overtime_hours,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao executar aplicação tauri");

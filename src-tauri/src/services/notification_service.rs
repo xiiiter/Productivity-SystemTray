@@ -1,97 +1,143 @@
-// src-tauri/src/services/notification_service.rs
-
 use crate::models::notification::*;
-use crate::integrations::google_sheets::SheetsClient;
+use crate::services::sheets_service::{SheetsService, SheetRow};
 use crate::shared::error::AppError;
-use std::collections::HashMap;
+use chrono::Utc;
+use uuid::Uuid;
+use tauri::AppHandle;
 
 pub struct NotificationService {
-    sheets: SheetsClient,
+    sheets: SheetsService,
 }
 
 impl NotificationService {
-    pub async fn new() -> Result<Self, AppError> {
-        let sheets = SheetsClient::new().await?;
+    pub async fn new(app: &AppHandle) -> Result<Self, AppError> {
+        let sheets = SheetsService::new(app).await?;
         Ok(Self { sheets })
     }
 
-    pub async fn get_notifications(&self, user_id: &str, _filter: Option<NotificationFilter>) -> Result<NotificationListResponse, AppError> {
-        let range = "Notifications!A2:G";
-        let values = self.sheets.read_range(range).await?;
+    pub async fn get_notifications(
+        &self,
+        user_id: &str,
+        filter: Option<NotificationFilter>,
+    ) -> Result<NotificationListResponse, AppError> {
+        let rows: Vec<SheetRow> = self.sheets.get_notifications_by_user(user_id).await?;
+        
+        let mut notifications: Vec<Notification> = rows
+            .into_iter()
+            .filter_map(|row| self.parse_notification_from_row(&row.data, row.row_number).ok())
+            .collect();
 
-        let mut notifications = Vec::new();
-        let mut unread_count = 0;
-
-        for row in values {
-            if row.len() >= 7 && row[1] == user_id {
-                let read = row[5] == "1";
-                if !read {
-                    unread_count += 1;
-                }
-
-                notifications.push(Notification {
-                    id: row[0].clone(),
-                    user_id: row[1].clone(),
-                    notification_type: row[2].clone(),
-                    priority: row[3].clone(),
-                    message: row[4].clone(),
-                    title: "Notification".to_string(),
-                    action_url: None,
-                    action_label: None,
-                    metadata: NotificationMetadata {
-                        task_id: None,
-                        branch_id: None,
-                        exception_id: None,
-                        icon: None,
-                        color: None,
-                        sound_enabled: Some(true),
-                        related_users: None,
-                    },
-                    read,
-                    created_at: row[6].clone(),
-                    read_at: None,
-                    expires_at: None,
-                });
+        if let Some(filter) = &filter {
+            if let Some(read) = filter.read {
+                notifications.retain(|n| n.read == read);
             }
         }
 
+        let unread_count = notifications.iter().filter(|n| !n.read).count() as u32;
         let total = notifications.len() as u32;
-
+        
         Ok(NotificationListResponse {
             notifications,
-            total,
             unread_count,
+            total,
             has_more: false,
         })
     }
 
-    pub async fn mark_as_read(&self, _user_id: &str, _request: MarkAsReadRequest) -> Result<(), AppError> {
-        Ok(())
+    pub async fn mark_as_read(&self, _user_id: &str, notification_id: &str) -> Result<(), AppError> {
+        let rows = self.sheets.get_tasks().await?;
+        let row = rows.into_iter()
+            .find(|r| r.data.get(0).map(|s| s.as_str()) == Some(notification_id))
+            .ok_or_else(|| AppError::NotFound("Notification not found".into()))?;
+
+        self.sheets.mark_notification_read(row.row_number).await
     }
 
-    pub async fn mark_all_as_read(&self, _user_id: &str) -> Result<(), AppError> {
-        Ok(())
+    pub async fn mark_all_as_read(&self, user_id: &str) -> Result<(), AppError> {
+        self.sheets.mark_all_notifications_read(user_id).await
     }
 
-    pub async fn get_notification_stats(&self, _user_id: &str) -> Result<NotificationStats, AppError> {
-        let mut by_type = HashMap::new();
-        by_type.insert("task_assigned".to_string(), 5);
-        by_type.insert("deadline_approaching".to_string(), 2);
+    pub async fn create_notification(
+        &self,
+        user_id: &str,
+        title: String,
+        message: String,
+        n_type: String,
+        priority: String,
+        url: Option<String>,
+    ) -> Result<Notification, AppError> {
+        let notification = Notification {
+            id: Uuid::new_v4().to_string(),
+            user_id: user_id.to_string(),
+            title,
+            message,
+            notification_type: n_type,
+            priority,
+            read: false,
+            read_at: None,
+            action_url: url,
+            action_label: None,
+            expires_at: None,
+            metadata: NotificationMetadata {
+                branch_id: None,
+                color: None,
+                exception_id: None,
+                task_id: None,
+                icon: None,
+                related_users: None,
+                sound_enabled: None,
+            },
+            created_at: Utc::now().to_rfc3339(),
+        };
 
-        let mut by_priority = HashMap::new();
-        by_priority.insert("normal".to_string(), 5);
-        by_priority.insert("high".to_string(), 2);
+        let row_data = self.notification_to_row_data(&notification);
+        self.sheets.add_notification(row_data).await?;
+        Ok(notification)
+    }
 
-        Ok(NotificationStats {
-            total: 7,
-            unread: 3,
-            by_type,
-            by_priority,
-            last_24h: 5,
+    fn parse_notification_from_row(&self, data: &[String], _row_num: usize) -> Result<Notification, AppError> {
+        if data.len() < 7 { 
+            return Err(AppError::NotFound("Invalid row".into())); 
+        }
+        Ok(Notification {
+            id: data[1].clone(),
+            user_id: data[0].clone(),
+            title: data[2].clone(),
+            message: data[3].clone(),
+            notification_type: data[4].clone(),
+            priority: data[5].clone(),
+            read: data[6].to_lowercase() == "read" || data[6].to_lowercase() == "true",
+            read_at: data.get(11).filter(|s| !s.is_empty()).cloned(),
+            action_url: data.get(7).cloned(),
+            action_label: data.get(8).cloned(),
+            expires_at: data.get(9).filter(|s| !s.is_empty()).cloned(),
+            metadata: NotificationMetadata {
+                branch_id: None,
+                color: None,
+                exception_id: None,
+                task_id: None,
+                icon: None,
+                related_users: None,
+                sound_enabled: None,
+            },
+            created_at: data.get(10).cloned().unwrap_or_else(|| Utc::now().to_rfc3339()),
         })
     }
 
-    pub async fn update_notification_settings(&self, _user_id: &str, request: UpdateSettingsRequest) -> Result<NotificationSettings, AppError> {
-        Ok(request.settings)
+    fn notification_to_row_data(&self, n: &Notification) -> Vec<String> {
+        vec![
+            n.user_id.clone(),
+            n.id.clone(),
+            n.title.clone(),
+            n.message.clone(),
+            n.notification_type.clone(),
+            n.priority.clone(),
+            if n.read { "READ" } else { "UNREAD" }.to_string(),
+            n.action_url.clone().unwrap_or_default(),
+            n.action_label.clone().unwrap_or_default(),
+            n.expires_at.clone().unwrap_or_default(),
+            n.created_at.clone(),
+            n.read_at.clone().unwrap_or_default(),
+        ]
     }
 }

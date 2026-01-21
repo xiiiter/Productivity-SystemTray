@@ -8,60 +8,50 @@ use google_sheets4::{
     oauth2::{self, ServiceAccountAuthenticator},
     Sheets,
 };
+use tauri::{AppHandle, Manager};
+use tauri::path::BaseDirectory;
 
-const SPREADSHEET_ID: &str = "YOUR_SPREADSHEET_ID_HERE";
-const SERVICE_ACCOUNT_KEY: &str = "amplified-name-484715-i1-4384a7a2d183.json";
+const SPREADSHEET_ID: &str = "1L4z4lIkUbgD9gWqE2aWLeIfPveCRfIr3ryAOOMqTWjE";
 
 pub struct SheetsClient {
     hub: Sheets<HttpsConnector<HttpConnector>>,
 }
 
 impl SheetsClient {
-    pub async fn new() -> Result<Self, AppError> {
-        let service_account_key = oauth2::read_service_account_key(SERVICE_ACCOUNT_KEY)
+    pub async fn new(app: &AppHandle) -> Result<Self, AppError> {
+        let resource_path = app.path()
+            .resolve("credentials.json", BaseDirectory::Resource)
+            .map_err(|e| AppError::External(format!("Path resolve error: {}", e)))?;
+
+        let service_account_key = oauth2::read_service_account_key(&resource_path)
             .await
-            .map_err(|e| AppError::External(format!("Failed to read service account key: {}", e)))?;
+            .map_err(|e| AppError::External(format!("Failed to read key: {}", e)))?;
 
         let auth = ServiceAccountAuthenticator::builder(service_account_key)
             .build()
             .await
-            .map_err(|e| AppError::External(format!("Failed to authenticate: {}", e)))?;
+            .map_err(|e| AppError::External(format!("Auth failed: {}", e)))?;
 
         let client = hyper::Client::builder().build(
             hyper_rustls::HttpsConnectorBuilder::new()
                 .with_native_roots()
-                .map_err(|e| AppError::External(format!("Failed to build HTTPS connector: {}", e)))?
+                .map_err(|e| AppError::External(format!("Connector error: {}", e)))?
                 .https_or_http()
                 .enable_http1()
                 .build(),
         );
 
         let hub = Sheets::new(client, auth);
-
         Ok(Self { hub })
     }
 
     pub async fn read_range(&self, range: &str) -> Result<Vec<Vec<String>>, AppError> {
-        let result = self
-            .hub
-            .spreadsheets()
-            .values_get(SPREADSHEET_ID, range)
-            .doit()
-            .await
-            .map_err(|e| AppError::External(format!("Failed to read from Sheets: {}", e)))?;
+        let result = self.hub.spreadsheets().values_get(SPREADSHEET_ID, range).doit().await
+            .map_err(|e| AppError::External(e.to_string()))?;
 
-        let values = result
-            .1
-            .values
-            .unwrap_or_default()
-            .into_iter()
-            .map(|row| {
-                row.into_iter()
-                    .map(|v| v.to_string().trim_matches('"').to_string())
-                    .collect()
-            })
+        let values = result.1.values.unwrap_or_default().into_iter()
+            .map(|row| row.into_iter().map(|v| v.to_string().trim_matches('"').to_string()).collect())
             .collect();
-
         Ok(values)
     }
 
@@ -69,26 +59,24 @@ impl SheetsClient {
         let value_range = ValueRange {
             major_dimension: None,
             range: Some(range.to_string()),
-            values: Some(
-                values
-                    .into_iter()
-                    .map(|row| row.into_iter().map(|v| serde_json::Value::String(v)).collect())
-                    .collect(),
-            ),
+            values: Some(values.into_iter().map(|row| row.into_iter().map(serde_json::Value::String).collect()).collect()),
         };
 
-        self.hub
-            .spreadsheets()
-            .values_append(value_range, SPREADSHEET_ID, range)
-            .value_input_option("RAW")
-            .doit()
-            .await
-            .map_err(|e| AppError::External(format!("Failed to write to Sheets: {}", e)))?;
-
+        self.hub.spreadsheets().values_append(value_range, SPREADSHEET_ID, range)
+            .value_input_option("RAW").doit().await
+            .map_err(|e| AppError::External(e.to_string()))?;
         Ok(())
     }
 
     pub async fn update_cell(&self, range: &str, value: String) -> Result<(), AppError> {
-        self.write_range(range, vec![vec![value]]).await
+        let value_range = ValueRange {
+            major_dimension: None,
+            range: Some(range.to_string()),
+            values: Some(vec![vec![serde_json::Value::String(value)]]),
+        };
+        self.hub.spreadsheets().values_update(value_range, SPREADSHEET_ID, range)
+            .value_input_option("RAW").doit().await
+            .map_err(|e| AppError::External(e.to_string()))?;
+        Ok(())
     }
 }

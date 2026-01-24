@@ -1,5 +1,5 @@
 // src-tauri/src/integrations/google_sheets.rs
-
+// ultimo commit (Vou utilizar esse projeto quando eu tiver uma equipe maior)
 use crate::shared::error::AppError;
 use google_sheets4::{
     api::ValueRange,
